@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Publications | Gopi Krishna Perumalla</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="topbar">
+    <button class="menu-btn" aria-label="Open menu" aria-expanded="false">☰</button>
+    <div class="topbar-title">Gopi Krishna Perumalla</div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+    <div class="profile">
+        <div class="avatar">GK</div>
+        <h1 class="name">Gopi Krishna Perumalla</h1>
+        <p class="role">Software Engineer • Java • Spring Boot</p>
+        <div class="social">
+            <a href="https://www.linkedin.com/in/gopiperumalla/" target="_blank" rel="noopener">in</a>
+            <a href="https://github.com/PerumallaSG2" target="_blank" rel="noopener">gh</a>
+            <a href="mailto:krishna316.official@gmail.com">@</a>
+        </div>
+        <div class="quick">
+            <div><span>Location:</span> Cincinnati, OH</div>
+            <div><span>Email:</span> krishna316.official@gmail.com</div>
+            <div><span>Phone:</span> (513) 259-9571</div>
+            <div><span>Grad:</span> April (MEng CS)</div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="education.html">Education</a>
+        <a href="experience.html">Experience</a>
+        <a href="projects.html">Projects</a>
+        <a href="publications.html" class="active">Publications</a>
+        <a href="skills.html">Skills</a>
+        <a href="assets/Resume.pdf" target="_blank" rel="noopener">Resume</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <small>© <span id="year"></span> Gopi Krishna</small>
+    </div>
+</aside>
+
+<main class="main">
+    <section id="publications" class="section alt">
+        <div class="section-inner">
+            <h3 class="section-title">Publications</h3>
+
+            <div class="grid pubs-grid">
+                <article class="card project pub-card">
+                    <h4>Fake Review Detection Using Unsupervised Learning</h4>
+
+                    <div class="diagram-wrapper">
+                        <iframe src="fake-review-modern.html" loading="lazy"></iframe>
+                    </div>
+
+                    <p class="muted">
+                        IEEE-Sponsored International Conference on Sustainable Computing and Data Communication Systems (ICSCDS 2022)
+                    </p>
+
+                    <ul class="list compact">
+                        <li>Developed NLP-based unsupervised models to detect fraudulent reviews in unstructured text datasets.</li>
+                        <li>Applied clustering and anomaly detection to identify spam patterns without labeled data.</li>
+                        <li>Published in IEEE Xplore, demonstrating practical NLP use in fraud detection scenarios.</li>
+                    </ul>
+
+                    <div class="proj-links">
+                        <a class="link-btn" href="https://ieeexplore.ieee.org/document/9760908" target="_blank" rel="noopener">
+                            View on IEEE Xplore
+                        </a>
+                    </div>
+                </article>
+            </div>
+
+        </div>
+    </section>
+</main>
+
+<script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    const btn = document.querySelector(".menu-btn");
+    const sidebar = document.getElementById("sidebar");
+    btn.addEventListener("click", () => {
+        const open = sidebar.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? "✕" : "☰";
+    });
+</script>
+</body>
+</html>
