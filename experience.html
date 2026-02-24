@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Experience | Gopi Krishna Perumalla</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="topbar">
+    <button class="menu-btn" aria-label="Open menu" aria-expanded="false">☰</button>
+    <div class="topbar-title">Gopi Krishna Perumalla</div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+    <div class="profile">
+        <div class="avatar">GK</div>
+        <h1 class="name">Gopi Krishna Perumalla</h1>
+        <p class="role">Software Engineer • Java • Spring Boot</p>
+        <div class="social">
+            <a href="https://www.linkedin.com/in/gopiperumalla/" target="_blank" rel="noopener">in</a>
+            <a href="https://github.com/PerumallaSG2" target="_blank" rel="noopener">gh</a>
+            <a href="mailto:krishna316.official@gmail.com">@</a>
+        </div>
+        <div class="quick">
+            <div><span>Location:</span> Cincinnati, OH</div>
+            <div><span>Email:</span> krishna316.official@gmail.com</div>
+            <div><span>Phone:</span> (513) 259-9571</div>
+            <div><span>Grad:</span> April (MEng CS)</div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="education.html">Education</a>
+        <a href="experience.html" class="active">Experience</a>
+        <a href="projects.html">Projects</a>
+        <a href="publications.html">Publications</a>
+        <a href="skills.html">Skills</a>
+        <a href="assets/Resume.pdf" target="_blank" rel="noopener">Resume</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <small>© <span id="year"></span> Gopi Krishna</small>
+    </div>
+</aside>
+
+<main class="main">
+    <section class="section">
+        <div class="section-inner">
+            <h3 class="section-title">Experience</h3>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-head">
+                        <div>
+                            <h4>Software Engineer / Technical Lead</h4>
+                            <p class="muted">StreetCare • Nov 2025 – Present</p>
+                        </div>
+                        <span class="pill">React • Kotlin • Firestore</span>
+                    </div>
+                    <ul class="list">
+                        <li>Lead feature planning across web (React) and mobile (Android/iOS), translating requirements into user stories and managing releases.</li>
+                        <li>Partner with stakeholders to define scope and priorities and deliver scalable solutions aligned with business goals.</li>
+                        <li>Contribute across the stack: React features, Java/Kotlin mobile functionality, and backend logic using Firestore + cloud functions.</li>
+                        <li>Design secure integrations across distributed components with a focus on reliability and maintainability.</li>
+                        <li>Mentor developers via sprint planning, code reviews, and engineering best practices (testing + CI/CD).</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-head">
+                        <div>
+                            <h4>Software Engineer</h4>
+                            <p class="muted">Deloitte Consulting India • Jun 2022 – Aug 2024</p>
+                        </div>
+                        <span class="pill">Spring Boot • Kafka • AWS</span>
+                    </div>
+                    <ul class="list">
+                        <li>Developed backend microservices for a customer-facing loan payment platform supporting payment scheduling and transaction workflows.</li>
+                        <li>Implemented Kafka-based asynchronous payment confirmation, reducing processing latency by ~40% vs. batch-based flows.</li>
+                        <li>Improved reliability with integration tests, event-driven retries, and failure-handling patterns across services.</li>
+                        <li>Deployed and supported production services on AWS using Docker and CI/CD pipelines with secure handling of sensitive data.</li>
+                        <li>Received Deloitte Spot Awards (two consecutive years) for high-impact contributions and consistent delivery.</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-head">
+                        <div>
+                            <h4>Software Engineer</h4>
+                            <p class="muted">KL Deemed to be University • Jan 2021 – Feb 2022</p>
+                        </div>
+                        <span class="pill">Spring Boot • Angular • MySQL</span>
+                    </div>
+                    <ul class="list">
+                        <li>Built multi-tier applications for course registration and examinations supporting 5,000+ users.</li>
+                        <li>Delivered role-based dashboards that reduced manual administrative effort by ~30%.</li>
+                        <li>Implemented authentication and authorization using Spring Security (RBAC).</li>
+                        <li>Optimized MySQL queries and backend workflows for peak enrollment and exam traffic.</li>
+                        <li>Deployed applications on AWS EC2 with Docker for scalable delivery.</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</main>
+
+<script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    const btn = document.querySelector(".menu-btn");
+    const sidebar = document.getElementById("sidebar");
+    btn.addEventListener("click", () => {
+        const open = sidebar.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? "✕" : "☰";
+    });
+</script>
+</body>
+</html>
