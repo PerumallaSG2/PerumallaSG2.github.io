@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fake Review Detection</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #060612; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Inter', 'Helvetica Neue', sans-serif; }
+
+  @keyframes float1  { 0%,100%{transform:translateY(0px)}   50%{transform:translateY(-8px)} }
+  @keyframes float2  { 0%,100%{transform:translateY(0px)}   50%{transform:translateY(-6px)} }
+  @keyframes float3  { 0%,100%{transform:translateY(0px)}   50%{transform:translateY(-5px)} }
+  @keyframes shimmer { 0%,100%{opacity:.55} 50%{opacity:1}  }
+  @keyframes blink   { 0%,100%{opacity:1}  50%{opacity:.2} }
+  @keyframes scanline{ 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+  @keyframes pulse   { 0%{box-shadow:0 0 0 0 rgba(239,68,68,.6)} 70%{box-shadow:0 0 0 10px rgba(239,68,68,0)} 100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes ticker  { 0%{offset-distance:0%;opacity:0} 8%{opacity:1} 85%{opacity:1} 100%{offset-distance:100%;opacity:0} }
+  @keyframes fadeRow { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes glow-pulse { 0%,100%{opacity:.4} 50%{opacity:.9} }
+
+  .card {
+    width: 560px; height: 360px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 0 80px rgba(239,68,68,.18), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+
+  canvas { position: absolute; inset: 0; }
+
+  .ui {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .top { padding: 18px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+  .tag {
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    color: #f87171; background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3); padding: 4px 12px; border-radius: 4px;
+    font-family: 'SF Mono', monospace;
+  }
+  .live { display:flex; align-items:center; gap:6px; font-size:9px; color:#22c55e; letter-spacing:2px; font-family:monospace; }
+  .live-dot { width:7px;height:7px;background:#22c55e;border-radius:50%;animation:blink 1.2s infinite;box-shadow:0 0 8px #22c55e; }
+
+  .title { padding: 6px 24px 0; }
+  .title h1 { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+  .title h1 em { font-style:normal; color: #f87171; }
+
+  /* ── SCENE ── */
+  .scene {
+    flex: 1; display: flex; align-items: center;
+    padding: 0 20px; gap: 14px;
+    position: relative;
+  }
+
+  /* ROBOT */
+  .robot {
+    flex-shrink: 0; width: 90px;
+    animation: float1 3.5s ease-in-out infinite;
+  }
+  .robot-head {
+    width: 74px; height: 68px; margin: 0 auto;
+    background: linear-gradient(145deg,#1e1b4b,#0f0a2e);
+    border-radius: 12px;
+    border: 1.5px solid rgba(139,92,246,.5);
+    box-shadow: 0 0 24px rgba(139,92,246,.3);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px; position: relative;
+  }
+  .robot-antenna {
+    position:absolute; top:-18px; left:50%; transform:translateX(-50%);
+    width:3px; height:18px; background:#6366f1;
+  }
+  .robot-antenna::after {
+    content:''; position:absolute; top:-5px; left:50%; transform:translateX(-50%);
+    width:8px;height:8px;background:#f87171;border-radius:50%;
+    box-shadow:0 0 10px #f87171; animation:blink .8s infinite;
+  }
+  .robot-eyes { display:flex; gap:10px; }
+  .robot-eye {
+    width:16px;height:12px;background:#0f172a;border-radius:4px;
+    border:1px solid #38bdf8; display:flex;align-items:center;justify-content:center;
+  }
+  .robot-eye::after {
+    content:''; width:7px;height:7px;background:#38bdf8;border-radius:50%;
+    box-shadow:0 0 8px #38bdf8; animation:shimmer 1.5s infinite;
+  }
+  .robot-mouth {
+    width:40px;height:10px;background:#0f172a;border-radius:4px;
+    border:1px solid #6366f1;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .robot-mouth span {
+    width:5px;height:6px;background:#38bdf8;border-radius:1px;
+    animation:shimmer 1s infinite;
+  }
+  .robot-mouth span:nth-child(2){animation-delay:.2s}
+  .robot-mouth span:nth-child(3){animation-delay:.4s}
+  .robot-body {
+    width:80px;height:48px;margin:4px auto 0;
+    background:linear-gradient(145deg,#1e1b4b,#0f0a2e);
+    border-radius:10px;border:1.5px solid rgba(139,92,246,.4);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;
+    padding:6px;
+  }
+  .robot-screen-row { width:100%;height:5px;border-radius:3px;background:rgba(99,102,241,.2); }
+  .robot-screen-row.on { background:rgba(99,102,241,.7); animation:shimmer 2s infinite; }
+  .robot-label { font-size:8px;color:#818cf8;text-align:center;letter-spacing:1px;margin-top:4px;text-transform:uppercase;font-family:monospace; }
+
+  /* MAGNIFIER */
+  .magnifier {
+    position:absolute; left:78px; bottom:72px;
+    animation:float2 2.8s ease-in-out infinite .5s;
+  }
+  .mag-circle {
+    width:28px;height:28px;border-radius:50%;
+    border:3px solid #f59e0b;box-shadow:0 0 12px rgba(245,158,11,.5);
+    background:rgba(245,158,11,.05);
+  }
+  .mag-handle {
+    position:absolute;bottom:-10px;right:-8px;
+    width:3px;height:14px;background:#f59e0b;border-radius:2px;
+    transform:rotate(45deg); box-shadow:0 0 6px rgba(245,158,11,.5);
+  }
+
+  /* CENTER DASHBOARD */
+  .dashboard {
+    flex:1; animation:float2 4s ease-in-out infinite .3s;
+  }
+  .dash-box {
+    background:linear-gradient(145deg,#0d1117,#0f172a);
+    border:1.5px solid rgba(255,255,255,.1); border-radius:14px;
+    overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,.5);
+  }
+  .dash-topbar {
+    display:flex;align-items:center;gap:6px;
+    padding:8px 12px; background:#161b22; border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .dash-dot { width:9px;height:9px;border-radius:50%; }
+  .dash-title-text {
+    font-size:8px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;
+    font-family:monospace; margin-left:4px;
+  }
+  .review-row {
+    display:flex; align-items:center; gap:8px;
+    padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04);
+    animation: fadeRow .4s both;
+  }
+  .review-row:nth-child(1){animation-delay:.2s}
+  .review-row:nth-child(2){animation-delay:.5s}
+  .review-row:nth-child(3){animation-delay:.8s}
+  .review-row:last-child{border-bottom:none;}
+  .stars { font-size:10px; flex-shrink:0; width:60px; }
+  .review-lines { flex:1; display:flex;flex-direction:column;gap:3px; }
+  .review-line {
+    height:4px;border-radius:2px;background:rgba(255,255,255,.1);
+  }
+  .badge {
+    font-size:8px;font-weight:700;padding:3px 8px;border-radius:5px;
+    flex-shrink:0; font-family:monospace; letter-spacing:.5px;
+  }
+  .badge.fake { background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.4); animation:pulse 2s infinite; }
+  .badge.real { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.35); }
+  .badge.check{ background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.35); }
+
+  /* scan line overlay */
+  .scanline-wrap { position:relative;overflow:hidden; }
+  .scanline {
+    position:absolute;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(56,189,248,.15),transparent);
+    animation:scanline 2.5s linear infinite; pointer-events:none;
+  }
+
+  /* SUSPECT */
+  .suspect {
+    flex-shrink:0; width:90px; text-align:center;
+    animation:float3 3.8s ease-in-out infinite .8s;
+  }
+  .suspect-head {
+    width:50px;height:50px;margin:0 auto;
+    background:linear-gradient(145deg,#fde68a,#fbbf24);
+    border-radius:50%;border:2px solid rgba(251,191,36,.5);
+    box-shadow:0 0 20px rgba(245,158,11,.3);
+    position:relative; overflow:hidden;
+  }
+  .suspect-glasses {
+    position:absolute;top:16px;left:4px;right:4px;
+    display:flex;gap:4px;
+  }
+  .glass {
+    flex:1;height:12px;background:#0f172a;border-radius:3px;
+    border:1px solid #374151;
+  }
+  .suspect-smirk {
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+    width:20px;height:8px;
+    border-bottom:2px solid #d97706;border-radius:0 0 8px 8px;
+  }
+  .suspect-body {
+    width:60px;height:36px;margin:3px auto 0;
+    background:linear-gradient(145deg,#dc2626,#b91c1c);
+    border-radius:8px;border:1px solid rgba(239,68,68,.4);
+  }
+  /* phone in hand */
+  .hand-phone {
+    width:28px;height:44px;background:#0f172a;border-radius:5px;
+    border:1.5px solid rgba(239,68,68,.4);
+    margin:4px auto 0;
+    display:flex;flex-direction:column;align-items:center;
+    padding:4px 3px;gap:3px;
+  }
+  .hp-stars { font-size:7px;color:#f59e0b; }
+  .hp-line { width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px; }
+  .hp-btn {
+    width:90%;height:9px;background:#ef4444;border-radius:2px;
+    font-size:5px;color:white;display:flex;align-items:center;justify-content:center;
+    letter-spacing:.5px;font-weight:700;font-family:monospace;margin-top:auto;
+  }
+  /* warning bubble */
+  .warning-bubble {
+    background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);
+    border-radius:8px;padding:4px 6px;margin-bottom:4px;
+    font-size:8px;color:#f87171;font-weight:700;letter-spacing:.5px;
+    font-family:monospace;text-align:center;
+    animation:float1 2s ease-in-out infinite;
+    box-shadow:0 0 12px rgba(239,68,68,.2);
+  }
+  .suspect-label { font-size:8px;color:#f87171;letter-spacing:1px;text-transform:uppercase;font-family:monospace;margin-top:4px; }
+
+  /* CONNECTOR LINES */
+  .connectors { position:absolute;inset:0;pointer-events:none; }
+
+  /* ── STATS BAR ── */
+  .stats {
+    padding: 8px 24px 14px;
+    border-top:1px solid rgba(255,255,255,.05);
+    display:flex; gap:0; align-items:center;
+  }
+  .stat { display:flex;flex-direction:column;gap:2px;padding:0 18px; }
+  .stat:first-child{padding-left:0;}
+  .stat-val { font-size:14px;font-weight:800; }
+  .stat-key { font-size:7px;color:#4b5563;letter-spacing:1.5px;text-transform:uppercase;font-family:monospace; }
+  .stat-sep { width:1px;height:28px;background:rgba(255,255,255,.07); }
+  .acc-wrap { flex:1;padding-left:18px; }
+  .acc-label { font-size:7px;color:#4b5563;letter-spacing:1.5px;text-transform:uppercase;font-family:monospace;margin-bottom:5px; }
+  .acc-bar { height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden; }
+  .acc-fill { height:100%;width:96%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:3px;box-shadow:0 0 8px rgba(239,68,68,.5);animation:shimmer 2s infinite; }
+</style>
+</head>
+<body>
+<div class="card">
+  <canvas id="c"></canvas>
+  <div class="ui">
+    <div class="top">
+      <div class="tag">ML · NLP · Classification</div>
+      <div class="live"><div class="live-dot"></div>SCANNING</div>
+    </div>
+    <div class="title">
+      <h1>Fake Review <em>Detection</em> System</h1>
+    </div>
+
+    <div class="scene">
+      <!-- CONNECTOR SVG -->
+      <svg class="connectors" viewBox="0 0 560 220">
+        <!-- robot → dashboard -->
+        <path d="M 100 110 Q 150 110 175 110" stroke="rgba(99,102,241,.5)" stroke-width="1.5" fill="none" stroke-dasharray="5,4"/>
+        <circle r="4" fill="#818cf8" opacity=".9">
+          <animateMotion dur="1.6s" repeatCount="indefinite" path="M 100 110 Q 150 110 175 110"/>
+          <animate attributeName="opacity" values="0;1;1;0" dur="1.6s" repeatCount="indefinite"/>
+        </circle>
+        <!-- dashboard → suspect -->
+        <path d="M 430 90 Q 455 90 465 90" stroke="rgba(239,68,68,.5)" stroke-width="1.5" fill="none" stroke-dasharray="5,4"/>
+        <circle r="4" fill="#f87171" opacity=".9">
+          <animateMotion dur="1.4s" repeatCount="indefinite" begin=".3s" path="M 430 90 Q 455 90 465 90"/>
+          <animate attributeName="opacity" values="0;1;1;0" dur="1.4s" repeatCount="indefinite" begin=".3s"/>
+        </circle>
+      </svg>
+
+      <!-- ROBOT -->
+      <div class="robot">
+        <div style="position:relative;">
+          <div class="robot-antenna"></div>
+          <div class="robot-head">
+            <div class="robot-eyes">
+              <div class="robot-eye"></div>
+              <div class="robot-eye" style="animation-delay:.3s"></div>
+            </div>
+            <div class="robot-mouth">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+        <div class="robot-body">
+          <div class="robot-screen-row on"></div>
+          <div class="robot-screen-row"></div>
+          <div class="robot-screen-row on" style="width:70%;animation-delay:.5s"></div>
+        </div>
+        <div class="robot-label">ML Model</div>
+        <!-- magnifier -->
+        <div class="magnifier">
+          <div class="mag-circle"></div>
+          <div class="mag-handle"></div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="dashboard">
+        <div class="dash-box scanline-wrap">
+          <div class="scanline"></div>
+          <div class="dash-topbar">
+            <div class="dash-dot" style="background:#f87171"></div>
+            <div class="dash-dot" style="background:#fbbf24"></div>
+            <div class="dash-dot" style="background:#4ade80"></div>
+            <div class="dash-title-text">review-analyzer.py</div>
+          </div>
+          <!-- rows -->
+          <div class="review-row">
+            <div class="stars">★★★★★</div>
+            <div class="review-lines">
+              <div class="review-line" style="width:90%"></div>
+              <div class="review-line" style="width:65%"></div>
+            </div>
+            <div class="badge fake">⚠ FAKE</div>
+          </div>
+          <div class="review-row">
+            <div class="stars" style="color:#94a3b8">★★★<span style="color:#334155">★★</span></div>
+            <div class="review-lines">
+              <div class="review-line" style="width:75%"></div>
+              <div class="review-line" style="width:50%"></div>
+            </div>
+            <div class="badge real">✓ REAL</div>
+          </div>
+          <div class="review-row">
+            <div class="stars">★★★★★</div>
+            <div class="review-lines">
+              <div class="review-line" style="width:85%"></div>
+              <div class="review-line" style="width:55%"></div>
+            </div>
+            <div class="badge fake">⚠ FAKE</div>
+          </div>
+          <div class="review-row">
+            <div class="stars" style="color:#94a3b8">★★<span style="color:#334155">★★★</span></div>
+            <div class="review-lines">
+              <div class="review-line" style="width:70%"></div>
+              <div class="review-line" style="width:45%"></div>
+            </div>
+            <div class="badge check">? CHECK</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUSPECT -->
+      <div class="suspect">
+        <div class="warning-bubble">⚠ FAKE<br>DETECTED</div>
+        <div class="suspect-head">
+          <div class="suspect-glasses">
+            <div class="glass"></div>
+            <div class="glass"></div>
+          </div>
+          <div class="suspect-smirk"></div>
+        </div>
+        <div class="suspect-body"></div>
+        <div class="hand-phone">
+          <div class="hp-stars">★★★★★</div>
+          <div class="hp-line"></div>
+          <div class="hp-line" style="width:70%"></div>
+          <div class="hp-btn">POST</div>
+        </div>
+        <div class="suspect-label">Spammer</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" style="color:#f87171">96.4%</div>
+        <div class="stat-key">Accuracy</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-val" style="color:#fbbf24">8ms</div>
+        <div class="stat-key">Latency</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-val" style="color:#818cf8">2.1M</div>
+        <div class="stat-key">Reviews</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="acc-wrap">
+        <div class="acc-label">Detection Rate</div>
+        <div class="acc-bar"><div class="acc-fill"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = 560; c.height = 360;
+const W = 560, H = 360;
+
+const pts = Array.from({length:50}, () => ({
+  x: Math.random()*W, y: Math.random()*H,
+  vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
+  r: Math.random()*1.4+.3,
+  col: ['#ef4444','#f97316','#818cf8','#6366f1','#f87171'][Math.floor(Math.random()*5)],
+  a: Math.random()*.4+.1
+}));
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // bg
+  const g=ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'#0d0608'); g.addColorStop(.5,'#120a0a'); g.addColorStop(1,'#0d0608');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // glows
+  [{x:100,y:100,r:140,c:'rgba(239,68,68,.07)'},{x:460,y:260,r:120,c:'rgba(245,158,11,.06)'},{x:280,y:180,r:110,c:'rgba(139,92,246,.06)'}].forEach(b=>{
+    const rg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    rg.addColorStop(0,b.c); rg.addColorStop(1,'transparent');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
+  });
+  // dots
+  ctx.fillStyle='rgba(255,255,255,.02)';
+  for(let x=20;x<W;x+=32)for(let y=20;y<H;y+=32){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();}
+  // particles
+  pts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+    if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.col; ctx.globalAlpha=p.a; ctx.fill(); ctx.globalAlpha=1;
+  });
+  // connections
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<65){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+    ctx.strokeStyle=`rgba(239,68,68,${.05*(1-d/65)})`;ctx.lineWidth=.5;ctx.stroke();}
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
