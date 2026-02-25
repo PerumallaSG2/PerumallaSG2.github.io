@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Customer Support Portal</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#060612; display:flex; align-items:center; justify-content:center; min-height:100vh; font-family:'Inter','Helvetica Neue',sans-serif; }
+
+  @keyframes float1  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-8px)} }
+  @keyframes float2  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-6px)} }
+  @keyframes float3  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-5px)} }
+  @keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
+  @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:.15} }
+  @keyframes scanline{ 0%{top:-4px} 100%{top:110%} }
+  @keyframes fadeRow { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes pulse-blue { 0%{box-shadow:0 0 0 0 rgba(56,189,248,.7)} 70%{box-shadow:0 0 0 10px rgba(56,189,248,0)} 100%{box-shadow:0 0 0 0 rgba(56,189,248,0)} }
+  @keyframes typing { 0%,100%{opacity:0} 50%{opacity:1} }
+  @keyframes ping    { 0%{transform:scale(1);opacity:.8} 100%{transform:scale(2.2);opacity:0} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  .card {
+    width:560px; height:360px; border-radius:20px; overflow:hidden;
+    position:relative; border:1px solid rgba(255,255,255,.07);
+    box-shadow:0 0 80px rgba(56,189,248,.15), 0 0 0 1px rgba(255,255,255,.04);
+  }
+  canvas { position:absolute; inset:0; }
+  .ui { position:absolute; inset:0; display:flex; flex-direction:column; }
+
+  /* TOP BAR */
+  .top { padding:18px 24px 0; display:flex; justify-content:space-between; align-items:center; }
+  .tag { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:#38bdf8; background:rgba(56,189,248,.1); border:1px solid rgba(56,189,248,.3); padding:4px 12px; border-radius:4px; font-family:'SF Mono',monospace; }
+  .live { display:flex; align-items:center; gap:6px; font-size:9px; color:#22c55e; letter-spacing:2px; font-family:monospace; }
+  .live-dot { width:7px;height:7px;background:#22c55e;border-radius:50%;animation:blink 1.2s infinite;box-shadow:0 0 8px #22c55e; }
+
+  .title { padding:6px 24px 0; }
+  .title h1 { font-size:19px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+  .title h1 em { font-style:normal; color:#38bdf8; }
+
+  /* SCENE */
+  .scene { flex:1; display:flex; align-items:center; padding:4px 18px 0; gap:14px; position:relative; }
+
+  /* ── AGENT AVATAR ── */
+  .agent-wrap { flex-shrink:0; width:86px; display:flex; flex-direction:column; align-items:center; gap:5px; animation:float1 3.6s ease-in-out infinite; }
+  .avatar-ring {
+    width:62px; height:62px; border-radius:50%;
+    border:2px solid rgba(56,189,248,.5);
+    box-shadow:0 0 22px rgba(56,189,248,.25);
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#0c2a4a,#0a1f38);
+    position:relative;
+  }
+  .avatar-ring::after {
+    content:''; position:absolute; inset:-5px; border-radius:50%;
+    border:1.5px solid rgba(56,189,248,.2);
+    animation:ping 2s ease-out infinite;
+  }
+  .avatar-face { font-size:28px; }
+  .status-badge {
+    display:flex; align-items:center; gap:4px;
+    background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35);
+    border-radius:20px; padding:3px 8px;
+    font-size:7px; color:#4ade80; font-family:monospace; letter-spacing:1px;
+  }
+  .status-dot { width:5px;height:5px;background:#22c55e;border-radius:50%;animation:blink 1s infinite;box-shadow:0 0 5px #22c55e; }
+  .headset-icon { font-size:18px; margin-top:2px; animation:shimmer 2s infinite; }
+  .agent-name { font-size:8px; color:#38bdf8; font-family:monospace; letter-spacing:1px; text-transform:uppercase; }
+
+  /* ── CENTER DASHBOARD ── */
+  .dashboard { flex:1; animation:float2 4s ease-in-out infinite .4s; }
+  .dash-box {
+    background:linear-gradient(145deg,#0d1117,#0a1221);
+    border:1.5px solid rgba(255,255,255,.09); border-radius:14px;
+    overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,.5);
+    position:relative;
+  }
+  .scanline-el {
+    position:absolute; left:0; right:0; height:2px; z-index:10; pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(56,189,248,.12),transparent);
+    animation:scanline 3s linear infinite;
+  }
+  .dash-topbar {
+    display:flex; align-items:center; gap:6px;
+    padding:7px 12px; background:#161b22; border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .dtb-dot { width:8px;height:8px;border-radius:50%; }
+  .dtb-title { font-size:8px; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; font-family:monospace; margin-left:4px; flex:1; }
+  .dtb-count { font-size:8px; color:#38bdf8; font-family:monospace; background:rgba(56,189,248,.1); padding:2px 7px; border-radius:4px; }
+
+  /* ticket rows */
+  .ticket {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px; border-bottom:1px solid rgba(255,255,255,.04);
+    animation:fadeRow .4s both;
+  }
+  .ticket:last-child{border-bottom:none;}
+  .ticket:nth-child(1){animation-delay:.15s}
+  .ticket:nth-child(2){animation-delay:.3s}
+  .ticket:nth-child(3){animation-delay:.45s}
+  .ticket:nth-child(4){animation-delay:.6s}
+  .t-priority { width:5px; height:28px; border-radius:3px; flex-shrink:0; }
+  .t-info { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .t-title-line { height:5px; border-radius:2px; background:rgba(255,255,255,.12); }
+  .t-sub-line   { height:3px; border-radius:2px; background:rgba(255,255,255,.06); width:70%; }
+  .t-meta { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .t-avatar { width:16px;height:16px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center; }
+  .t-badge { font-size:7px; font-weight:700; padding:2px 7px; border-radius:4px; font-family:monospace; letter-spacing:.5px; }
+  .open   { background:rgba(251,191,36,.15); color:#fbbf24; border:1px solid rgba(251,191,36,.3); animation:shimmer 2s infinite; }
+  .inprog { background:rgba(56,189,248,.15); color:#38bdf8; border:1px solid rgba(56,189,248,.3); }
+  .resolved{background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+  .urgent { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); animation:pulse-blue 1.5s infinite; }
+
+  /* ── CHAT BUBBLE STACK ── */
+  .chat-stack { flex-shrink:0; width:120px; display:flex; flex-direction:column; gap:7px; animation:float3 3.4s ease-in-out infinite .6s; }
+
+  .bubble {
+    border-radius:12px; padding:8px 10px;
+    font-size:8px; line-height:1.5; position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
+  }
+  .bubble.agent {
+    background:linear-gradient(135deg,#1e3a5f,#0f2540);
+    border:1px solid rgba(56,189,248,.3); color:#93c5fd;
+    border-bottom-left-radius:3px;
+    animation:slideUp .5s .2s both;
+  }
+  .bubble.user {
+    background:linear-gradient(135deg,#1e1b4b,#130f35);
+    border:1px solid rgba(139,92,246,.3); color:#c4b5fd;
+    border-bottom-right-radius:3px; align-self:flex-end;
+    animation:slideUp .5s .5s both;
+  }
+  .bubble.agent::before { content:'🎧'; position:absolute; top:-8px; left:8px; font-size:10px; }
+  .bubble.user::before  { content:'👤'; position:absolute; top:-8px; right:8px; font-size:10px; }
+
+  .typing-indicator {
+    display:flex; align-items:center; gap:4px;
+    padding:8px 12px; background:rgba(56,189,248,.06);
+    border:1px solid rgba(56,189,248,.2); border-radius:12px;
+    border-bottom-left-radius:3px; width:fit-content;
+    animation:slideUp .5s .8s both;
+  }
+  .typing-dot { width:5px;height:5px;border-radius:50%;background:#38bdf8; }
+  .typing-dot:nth-child(1){animation:typing 1s .0s infinite;}
+  .typing-dot:nth-child(2){animation:typing 1s .2s infinite;}
+  .typing-dot:nth-child(3){animation:typing 1s .4s infinite;}
+
+  /* CONNECTORS */
+  .connectors { position:absolute; inset:0; pointer-events:none; }
+
+  /* STATS */
+  .stats { padding:8px 24px 14px; border-top:1px solid rgba(255,255,255,.05); display:flex; gap:0; align-items:center; }
+  .stat { display:flex;flex-direction:column;gap:2px;padding:0 16px; }
+  .stat:first-child{padding-left:0;}
+  .stat-val { font-size:14px; font-weight:800; }
+  .stat-key { font-size:7px; color:#4b5563; letter-spacing:1.5px; text-transform:uppercase; font-family:monospace; }
+  .stat-sep { width:1px; height:28px; background:rgba(255,255,255,.07); }
+  .sat-wrap { flex:1; padding-left:16px; }
+  .sat-label { font-size:7px; color:#4b5563; letter-spacing:1.5px; text-transform:uppercase; font-family:monospace; margin-bottom:5px; }
+  .sat-bar { height:5px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
+  .sat-fill { height:100%; width:94%; background:linear-gradient(90deg,#38bdf8,#818cf8); border-radius:3px; box-shadow:0 0 8px rgba(56,189,248,.5); animation:shimmer 2s infinite; }
+</style>
+</head>
+<body>
+<div class="card">
+  <canvas id="c"></canvas>
+  <div class="ui">
+
+    <div class="top">
+      <div class="tag">React · Node.js · WebSockets</div>
+      <div class="live"><div class="live-dot"></div>LIVE</div>
+    </div>
+    <div class="title">
+      <h1>Customer <em>Support</em> Portal</h1>
+    </div>
+
+    <div class="scene">
+
+      <!-- SVG CONNECTORS -->
+      <svg class="connectors" viewBox="0 0 560 210">
+        <!-- agent → dashboard -->
+        <path d="M 94 100 Q 125 100 148 100" stroke="rgba(56,189,248,.45)" stroke-width="1.5" fill="none" stroke-dasharray="5,4"/>
+        <circle r="4" fill="#38bdf8" opacity=".9">
+          <animateMotion dur="1.6s" repeatCount="indefinite" path="M 94 100 Q 125 100 148 100"/>
+          <animate attributeName="opacity" values="0;1;1;0" dur="1.6s" repeatCount="indefinite"/>
+        </circle>
+        <!-- dashboard → chat -->
+        <path d="M 390 80 Q 415 68 432 68" stroke="rgba(139,92,246,.45)" stroke-width="1.5" fill="none" stroke-dasharray="5,4"/>
+        <circle r="4" fill="#a78bfa" opacity=".9">
+          <animateMotion dur="1.8s" repeatCount="indefinite" begin=".4s" path="M 390 80 Q 415 68 432 68"/>
+          <animate attributeName="opacity" values="0;1;1;0" dur="1.8s" repeatCount="indefinite" begin=".4s"/>
+        </circle>
+        <path d="M 390 120 Q 415 130 432 138" stroke="rgba(56,189,248,.4)" stroke-width="1.5" fill="none" stroke-dasharray="5,4"/>
+        <circle r="4" fill="#38bdf8" opacity=".9">
+          <animateMotion dur="2s" repeatCount="indefinite" begin=".9s" path="M 390 120 Q 415 130 432 138"/>
+          <animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite" begin=".9s"/>
+        </circle>
+      </svg>
+
+      <!-- AGENT -->
+      <div class="agent-wrap">
+        <div class="avatar-ring">
+          <div class="avatar-face">👩🏽‍💼</div>
+        </div>
+        <div class="status-badge"><div class="status-dot"></div>ONLINE</div>
+        <div class="headset-icon">🎧</div>
+        <div class="agent-name">Agent · Sara</div>
+      </div>
+
+      <!-- TICKET DASHBOARD -->
+      <div class="dashboard">
+        <div class="dash-box">
+          <div class="scanline-el"></div>
+          <div class="dash-topbar">
+            <div class="dtb-dot" style="background:#f87171"></div>
+            <div class="dtb-dot" style="background:#fbbf24"></div>
+            <div class="dtb-dot" style="background:#4ade80"></div>
+            <div class="dtb-title">support-tickets</div>
+            <div class="dtb-count">24 open</div>
+          </div>
+
+          <div class="ticket">
+            <div class="t-priority" style="background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5)"></div>
+            <div class="t-info">
+              <div class="t-title-line" style="width:85%"></div>
+              <div class="t-sub-line"></div>
+            </div>
+            <div class="t-meta">
+              <div class="t-avatar">🔴</div>
+              <div class="t-badge urgent">URGENT</div>
+            </div>
+          </div>
+
+          <div class="ticket">
+            <div class="t-priority" style="background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,.4)"></div>
+            <div class="t-info">
+              <div class="t-title-line" style="width:75%"></div>
+              <div class="t-sub-line"></div>
+            </div>
+            <div class="t-meta">
+              <div class="t-avatar">🟡</div>
+              <div class="t-badge open">OPEN</div>
+            </div>
+          </div>
+
+          <div class="ticket">
+            <div class="t-priority" style="background:#38bdf8;box-shadow:0 0 6px rgba(56,189,248,.4)"></div>
+            <div class="t-info">
+              <div class="t-title-line" style="width:90%"></div>
+              <div class="t-sub-line"></div>
+            </div>
+            <div class="t-meta">
+              <div class="t-avatar">🔵</div>
+              <div class="t-badge inprog">IN PROG</div>
+            </div>
+          </div>
+
+          <div class="ticket">
+            <div class="t-priority" style="background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.4)"></div>
+            <div class="t-info">
+              <div class="t-title-line" style="width:68%"></div>
+              <div class="t-sub-line"></div>
+            </div>
+            <div class="t-meta">
+              <div class="t-avatar">🟢</div>
+              <div class="t-badge resolved">RESOLVED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT BUBBLES -->
+      <div class="chat-stack">
+        <div class="bubble agent">Hi! How can I help you today?</div>
+        <div class="bubble user">My order hasn't arrived yet...</div>
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" style="color:#38bdf8">94%</div>
+        <div class="stat-key">CSAT Score</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-val" style="color:#fbbf24">1.8m</div>
+        <div class="stat-key">Avg. Response</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-val" style="color:#4ade80">247</div>
+        <div class="stat-key">Resolved Today</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="sat-wrap">
+        <div class="sat-label">Satisfaction Rate</div>
+        <div class="sat-bar"><div class="sat-fill"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = 560; c.height = 360;
+const W = 560, H = 360;
+
+const pts = Array.from({length: 55}, () => ({
+  x: Math.random() * W, y: Math.random() * H,
+  vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
+  r: Math.random() * 1.4 + .3,
+  col: ['#38bdf8','#818cf8','#6366f1','#0ea5e9','#a78bfa'][Math.floor(Math.random() * 5)],
+  a: Math.random() * .35 + .1
+}));
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#05080f'); g.addColorStop(.5, '#080d1a'); g.addColorStop(1, '#05080f');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  [{x:90,y:100,r:150,c:'rgba(56,189,248,.07)'},{x:450,y:260,r:130,c:'rgba(99,102,241,.06)'},{x:280,y:180,r:110,c:'rgba(14,165,233,.05)'},{x:430,y:70,r:90,c:'rgba(139,92,246,.05)'}].forEach(b => {
+    const rg = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    rg.addColorStop(0, b.c); rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,.018)';
+  for (let x = 20; x < W; x += 32) for (let y = 20; y < H; y += 32) {
+    ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI * 2); ctx.fill();
+  }
+
+  pts.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.col; ctx.globalAlpha = p.a; ctx.fill(); ctx.globalAlpha = 1;
+  });
+
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx*dx + dy*dy);
+    if (d < 65) {
+      ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+      ctx.strokeStyle = `rgba(56,189,248,${.055 * (1 - d / 65)})`; ctx.lineWidth = .5; ctx.stroke();
+    }
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
